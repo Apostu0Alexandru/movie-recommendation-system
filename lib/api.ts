@@ -210,23 +210,9 @@ export const getMovie = (id: number): Movie | undefined => {
  return movies.find(movie => movie.id === id);
 };
 
-export const rateMovie = (id: number, rating: number, userId: string): void => {
-  if (!userRatings[userId]) {
-    userRatings[userId] = {};
-  }
-  userRatings[userId][id] = rating;
-  
-  // Update the userMovieRatings for the ML model
-  if (!userMovieRatings[userId]) {
-    userMovieRatings[userId] = {};
-  }
-  userMovieRatings[userId][id] = rating;
-};
-
 // Initialize watchLater with proper typing
 const watchLater: { [userId: string]: Set<number> } = {};
 
-// Simulated user-movie rating matrix
 const userMovieRatings: { [userId: string]: { [movieId: number]: number } } = {
     "1": { 1: 4, 3: 5, 6: 3, 8: 4 },
     "2": { 2: 5, 4: 4, 7: 3, 9: 5 },
@@ -246,7 +232,7 @@ const userMovieRatings: { [userId: string]: { [movieId: number]: number } } = {
     const N = R.length;
     const M = R[0].length;
     
-    let P: number[][] = Array.from({ length: N }, () => Array(K).fill(0).map(() => Math.random()));
+    const P: number[][] = Array.from({ length: N }, () => Array(K).fill(0).map(() => Math.random()));
     let Q: number[][] = Array.from({ length: M }, () => Array(K).fill(0).map(() => Math.random()));
     Q = transpose(Q);
   
@@ -254,7 +240,7 @@ const userMovieRatings: { [userId: string]: { [movieId: number]: number } } = {
       for (let i = 0; i < N; i++) {
         for (let j = 0; j < M; j++) {
           if (R[i][j] > 0) {
-            let eij = R[i][j] - dotProduct(P[i], Q[j]);
+            const eij = R[i][j] - dotProduct(P[i], Q[j]);
             for (let k = 0; k < K; k++) {
               P[i][k] += alpha * (2 * eij * Q[j][k] - beta * P[i][k]);
               Q[j][k] += alpha * (2 * eij * P[i][k] - beta * Q[j][k]);
@@ -355,6 +341,21 @@ const userMovieRatings: { [userId: string]: { [movieId: number]: number } } = {
     const paginatedMovies = recommendedMovies.slice((page - 1) * pageSize, page * pageSize);
     return { movies: paginatedMovies, totalPages };
   };
+
+
+  export const rateMovie = (id: number, rating: number, userId: string): void => {
+    if (!userRatings[userId]) {
+      userRatings[userId] = {};
+    }
+    userRatings[userId][id] = rating;
+    
+    // Update the userMovieRatings for the ML model
+    if (!userMovieRatings[userId]) {
+      userMovieRatings[userId] = {};
+    }
+    userMovieRatings[userId][id] = rating;
+  };
+  
   
 export const getUserRatings = (userId: string): { [key: number]: number } => {
   return userRatings[userId] || {};
