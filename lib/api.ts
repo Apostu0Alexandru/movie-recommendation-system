@@ -1,7 +1,6 @@
 import { Movie, SearchResults, SortOption } from "./types";
 
 
-
 // Mock movie data
 const movies: Movie[] = [
  { 
@@ -165,7 +164,8 @@ type UserRatings = {
 };
 
 // Initialize with proper typing
-let userRatings: UserRatings = {};
+const userRatings: UserRatings = {};
+
 
 
 export const getAllGenres = (): string[] => {
@@ -181,7 +181,7 @@ export const searchMovies = (
   genres: string[] = [],
   sortOption: SortOption = 'rating'
 ): SearchResults => {
-  let filteredMovies = movies.filter(movie => 
+  const filteredMovies = movies.filter(movie => 
     (movie.title.toLowerCase().includes(query.toLowerCase()) ||
     movie.genre.some(g => g.toLowerCase().includes(query.toLowerCase()))) &&
     (genres.length === 0 || genres.some(g => movie.genre.includes(g)))
@@ -224,7 +224,7 @@ export const rateMovie = (id: number, rating: number, userId: string): void => {
 };
 
 // Initialize watchLater with proper typing
-let watchLater: { [userId: string]: Set<number> } = {};
+const watchLater: { [userId: string]: Set<number> } = {};
 
 // Simulated user-movie rating matrix
 const userMovieRatings: { [userId: string]: { [movieId: number]: number } } = {
@@ -236,35 +236,35 @@ const userMovieRatings: { [userId: string]: { [movieId: number]: number } } = {
 };
 
 // Simple matrix factorization for collaborative filtering
-function matrixFactorization(
-  R: number[][], 
-  K: number, 
-  steps: number, 
-  alpha: number, 
-  beta: number
-): [number[][], number[][]] {
-  const N = R.length;
-  const M = R[0].length;
+// function matrixFactorization(
+//   R: number[][], 
+//   K: number, 
+//   steps: number, 
+//   alpha: number, 
+//   beta: number
+// ): [number[][], number[][]] {
+//   const N = R.length;
+//   const M = R[0].length;
   
-  let P: number[][] = Array.from({ length: N }, () => Array(K).fill(0).map(() => Math.random()));
-  let Q: number[][] = Array.from({ length: M }, () => Array(K).fill(0).map(() => Math.random()));
+//   const P: number[][] = Array.from({ length: N }, () => Array(K).fill(0).map(() => Math.random()));
+//   const Q: number[][] = Array.from({ length: M }, () => Array(K).fill(0).map(() => Math.random()));
 
-  for (let step = 0; step < steps; step++) {
-    for (let i = 0; i < N; i++) {
-      for (let j = 0; j < M; j++) {
-        if (R[i][j] > 0) {
-          let eij = R[i][j] - P[i].reduce((sum, p, k) => sum + p * Q[j][k], 0);
-          for (let k = 0; k < K; k++) {
-            P[i][k] += alpha * (2 * eij * Q[j][k] - beta * P[i][k]);
-            Q[j][k] += alpha * (2 * eij * P[i][k] - beta * Q[j][k]);
-          }
-        }
-      }
-    }
-  }
+//   for (let step = 0; step < steps; step++) {
+//     for (let i = 0; i < N; i++) {
+//       for (let j = 0; j < M; j++) {
+//         if (R[i][j] > 0) {
+//           const eij = R[i][j] - P[i].reduce((sum, p, k) => sum + p * Q[j][k], 0);
+//           for (let k = 0; k < K; k++) {
+//             P[i][k] += alpha * (2 * eij * Q[j][k] - beta * P[i][k]);
+//             Q[j][k] += alpha * (2 * eij * P[i][k] - beta * Q[j][k]);
+//           }
+//         }
+//       }
+//     }
+//   }
 
-  return [P, Q];
-}
+//   return [P, Q];
+// }
 
 // Function to get movie recommendations using the ML model
 function getMLRecommendations(userId: string): SearchResults {
@@ -369,5 +369,4 @@ export const getRelatedMovies = (movieId: number, limit: number = 5): Movie[] =>
     .slice(0, limit);
 };
 
-export type { Movie };
-
+export type {Movie}

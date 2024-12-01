@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { StarRating } from './StarRating'
 import type { MovieCardProps } from '@/lib/types'
 
-export function MovieCard({ movie, onRate, userRating, onWatchLater, isInWatchLater }: MovieCardProps) {
+export function MovieCard({ movie, onRate, userRating }: MovieCardProps) {
   const handleRate = (rating: number) => {
     onRate(movie.id, rating);
   };
@@ -38,4 +38,3 @@ export function MovieCard({ movie, onRate, userRating, onWatchLater, isInWatchLa
     </Card>
   )
 }
-

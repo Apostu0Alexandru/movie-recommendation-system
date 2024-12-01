@@ -8,14 +8,14 @@ import { MovieList } from '../components/MovieList';
 import { GenreFilter } from '../components/GenreFilter';
 import { Pagination } from '../components/Pagination';
 import { SortSelect } from '../components/SortSelect';
-import { searchMovies, rateMovie, getRecommendations, getUserRatings, Movie, addToWatchLater, removeFromWatchLater, getWatchLaterList } from '@/lib/api';
+import { searchMovies, rateMovie, getRecommendations, getUserRatings, addToWatchLater, removeFromWatchLater, getWatchLaterList } from '@/lib/api';
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { SortOption } from '@/lib/types';
 
-interface SearchResults {
-  movies: Movie[];
-  totalPages: number;
-}
+// interface SearchResults {
+//   movies: Movie[];
+//   totalPages: number;
+// }
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -173,4 +173,3 @@ export default function Home() {
     </div>
   );
 }
-
