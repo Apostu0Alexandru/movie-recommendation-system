@@ -1,4 +1,5 @@
 import { Movie, SearchResults, SortOption } from "./types";
+import { getRecommendations as getMLRecommendations, generateMovieDescription } from "./mlModel";
 
 
 // Mock movie data
@@ -213,109 +214,20 @@ export const getMovie = (id: number): Movie | undefined => {
 // Initialize watchLater with proper typing
 const watchLater: { [userId: string]: Set<number> } = {};
 
-const userMovieRatings: { [userId: string]: { [movieId: number]: number } } = {
-    "1": { 1: 4, 3: 5, 6: 3, 8: 4 },
-    "2": { 2: 5, 4: 4, 7: 3, 9: 5 },
-    "3": { 1: 3, 5: 4, 10: 5, 12: 4 },
-    "4": { 3: 4, 6: 5, 8: 3, 11: 4 },
-    "5": { 2: 4, 7: 5, 9: 3, 13: 4 },
-  };
-  
-  // Matrix factorization for collaborative filtering
-  function matrixFactorization(
-    R: number[][], 
-    K: number, 
-    steps: number = 5000, 
-    alpha: number = 0.0002, 
-    beta: number = 0.02
-  ): [number[][], number[][]] {
-    const N = R.length;
-    const M = R[0].length;
-    
-    const P: number[][] = Array.from({ length: N }, () => Array(K).fill(0).map(() => Math.random()));
-    let Q: number[][] = Array.from({ length: M }, () => Array(K).fill(0).map(() => Math.random()));
-    Q = transpose(Q);
-  
-    for (let step = 0; step < steps; step++) {
-      for (let i = 0; i < N; i++) {
-        for (let j = 0; j < M; j++) {
-          if (R[i][j] > 0) {
-            const eij = R[i][j] - dotProduct(P[i], Q[j]);
-            for (let k = 0; k < K; k++) {
-              P[i][k] += alpha * (2 * eij * Q[j][k] - beta * P[i][k]);
-              Q[j][k] += alpha * (2 * eij * P[i][k] - beta * Q[j][k]);
-            }
-          }
-        }
-      }
-      
-      let e = 0;
-      for (let i = 0; i < N; i++) {
-        for (let j = 0; j < M; j++) {
-          if (R[i][j] > 0) {
-            e += Math.pow(R[i][j] - dotProduct(P[i], Q[j]), 2);
-            for (let k = 0; k < K; k++) {
-              e += (beta/2) * (Math.pow(P[i][k], 2) + Math.pow(Q[j][k], 2));
-            }
-          }
-        }
-      }
-      if (e < 0.001) break;
-    }
-  
-    return [P, transpose(Q)];
-  }
-  
-  function transpose(matrix: number[][]): number[][] {
-    return matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]));
-  }
-  
-  function dotProduct(a: number[], b: number[]): number {
-    return a.reduce((sum, val, i) => sum + val * b[i], 0);
-  }
-  
-  // Function to get movie recommendations using the ML model
-  function getMLRecommendations(userId: string): SearchResults {
-    const userIndex = Object.keys(userMovieRatings).indexOf(userId);
-    if (userIndex === -1) {
-      return { movies: [], totalPages: 0 };
-    }
-  
-    const R: number[][] = Object.keys(userMovieRatings).map(uid => 
-      movies.map(movie => userMovieRatings[uid][movie.id] || 0)
-    );
-  
-    const K = 2; // Number of latent features
-    const [P, Q] = matrixFactorization(R, K);
-  
-    const userVector = P[userIndex];
-    const recommendedMovies = movies.map((movie, i) => ({
-      ...movie,
-      score: dotProduct(userVector, Q[i])
-    }))
-    .sort((a, b) => b.score - a.score)
-    .filter(movie => !userMovieRatings[userId][movie.id]); // Exclude already rated movies
-  
-    return { movies: recommendedMovies, totalPages: 1 };
-  }
-  
-  // Update the existing getRecommendations function to use the ML model
-  export const getRecommendations = (
+export const getRecommendations = async (
     page: number = 1, 
     pageSize: number = 5, 
     selectedGenres: string[] = [], 
     userId: string | null = null, 
     sortOption: SortOption = 'rating'
-  ): SearchResults => {
+  ): Promise<SearchResults> => {
     let recommendedMovies: Movie[] = [];
   
     if (!userId || !userRatings[userId] || Object.keys(userRatings[userId]).length === 0) {
-      // For non-authenticated users or users without ratings, return top-rated movies
       recommendedMovies = [...movies];
     } else {
-      // Use ML recommendations if the user has ratings
-      const mlRecommendations = getMLRecommendations(userId);
-      recommendedMovies = mlRecommendations.movies;
+      const mlRecommendations = await getMLRecommendations(userId, userRatings[userId], movies);
+      recommendedMovies = mlRecommendations.map(item => item.movie);
     }
     
     if (selectedGenres.length > 0) {
@@ -324,7 +236,6 @@ const userMovieRatings: { [userId: string]: { [movieId: number]: number } } = {
       );
     }
   
-    // Sort movies based on the sortOption
     recommendedMovies.sort((a, b) => {
       switch (sortOption) {
         case 'title':
@@ -341,19 +252,18 @@ const userMovieRatings: { [userId: string]: { [movieId: number]: number } } = {
     const paginatedMovies = recommendedMovies.slice((page - 1) * pageSize, page * pageSize);
     return { movies: paginatedMovies, totalPages };
   };
-
-
-  export const rateMovie = (id: number, rating: number, userId: string): void => {
+  
+  export const rateMovie = async (id: number, rating: number, userId: string): Promise<void> => {
     if (!userRatings[userId]) {
       userRatings[userId] = {};
     }
     userRatings[userId][id] = rating;
     
-    // Update the userMovieRatings for the ML model
-    if (!userMovieRatings[userId]) {
-      userMovieRatings[userId] = {};
+    // Generate a new description for the movie using the ML model
+    const movie = movies.find(m => m.id === id);
+    if (movie) {
+      movie.plot = await generateMovieDescription(movie);
     }
-    userMovieRatings[userId][id] = rating;
   };
   
   
